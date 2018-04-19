@@ -1,6 +1,7 @@
 import sys
 import socket
 import argparse
+import json
 from threading import Thread
 
 """
@@ -26,6 +27,8 @@ MAX_BYTES = 1024
 class ChatClient:
     def __init__(self, host, port):
         self.__buffer = b''
+        self.username = ''
+        need_username = True
         # getaddrinfo functionality replicated from
         # https://github.com/brandon-rhodes/fopnp/blob/m/py3/chapter04/www_ping.py
 
@@ -50,6 +53,26 @@ class ChatClient:
 
         else:
             print('Successfully connected to host', info[4][0], 'is listening on port', info[4][1])
+
+            while need_username:
+                # Get username
+                self.username = input('Please provide a username: ')
+
+                # TODO: We aren't getting a response so we probably aren't sending the data right
+                self.sock.sendall(self.username.encode('ascii'))
+
+                # Check to see if username is available
+                resp = json.loads(self.sock.recv(MAX_BYTES).decode('ascii'))
+
+                if resp['USERNAME_ACCEPTED'] == 'true':
+                    print('Username valid, welcome to the chat server')
+                    need_username = False
+                else:
+                    print('Username invalid')
+
+                    # If the server responded with extra info we print it
+                    if 'INFO' in resp:
+                        print(resp['INFO'])
 
     def recv_until_delimiters(self, delim_list, buffer_size=1024):
         """ note, make sure this
@@ -132,7 +155,5 @@ if __name__ == '__main__':
     parser.add_argument('host', help='IP or hostname')
     parser.add_argument('-p', metavar='port', type=int, default=7000,
                         help='TCP port (default 7000)')
-    parser.add_argument('-n', metavar='num threads', type=int, default=4,
-                        help='Num threads for test mode')
     args = parser.parse_args()
     run_interactive_client(args.host, args.p)
