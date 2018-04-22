@@ -13,6 +13,8 @@ import asyncio
 
 class AsyncClient(asyncio.Protocol):
     def __init__(self):
+        self.processing_data = False
+        self.__buffer = ""
         self.is_logged_in = False
 
     def connection_made(self, transport):
@@ -25,11 +27,30 @@ class AsyncClient(asyncio.Protocol):
 
     def data_received(self, data):
         """simply prints any data that is received"""
-        # data = data.decode('ascii')
+        # get data into usable format
         data_len = struct.unpack("!I", data[0:4])[0]
         data = data.decode('ascii')
         data = data[4:(data_len + 4)]
-        print("received: ", data)
+
+        if data[0] == '{':
+            self.__buffer = data
+        else:
+            self.__buffer += data
+
+        if data[-1] == '}':
+            try:
+                data = json.loads(self.__buffer)
+            except json.JSONDecodeError:
+                print('decoding error with server response')
+
+            for key in data:
+                if key == "USERNAME_ACCEPTED":
+                    if data[key]:
+                        self.is_logged_in = True
+                        print()
+                        print('Successfully Logged In')
+                    else:
+                        self.processing_data = False
 
 
 @asyncio.coroutine
@@ -38,6 +59,23 @@ def handle_user_input(loop, client):
     if user inputs 'quit' stops the event loop
     otherwise just echos user input
     """
+    while not client.is_logged_in:
+        if not client.processing_data:
+            login_data = {"USERNAME": ""}
+
+            message = yield from loop.run_in_executor(None, input, "> Enter your username:  ")
+            if message == "quit":
+                loop.stop()
+                return
+
+            login_data["USERNAME"] = message
+            data_json = json.dumps(login_data)
+            data_bytes_json = data_json.encode('ascii')
+            byte_count = struct.pack("!I", len(data_bytes_json))
+
+            # The idea is we stop the client from asking for the username again until we determine if they are logged in
+            # client.processing_data = True
+            client.send_message(byte_count, data_bytes_json)
 
     while client.is_logged_in:
         message = yield from loop.run_in_executor(None, input, "> ")
@@ -45,20 +83,7 @@ def handle_user_input(loop, client):
             loop.stop()
             return
         print(message)
-    else:
-        login_data = {"USERNAME": ""}
 
-        message = yield from loop.run_in_executor(None, input, "> Enter your username:  ")
-        if message == "quit":
-            loop.stop()
-            return
-
-        login_data["USERNAME"] = message
-        data_json = json.dumps(login_data)
-        data_bytes_json = data_json.encode('ascii')
-        byte_count = struct.pack("!I", len(data_bytes_json))
-
-        client.send_message(byte_count, data_bytes_json)
 
 
 if __name__ == '__main__':
