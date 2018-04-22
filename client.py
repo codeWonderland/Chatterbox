@@ -107,6 +107,13 @@ def handle_user_input(loop, client):
         if message == "quit":
             loop.stop()
             return
+
+        # Checking for DM
+        if message[0] == '@':
+            index = message.find(' ')
+            recip = message[1:index + 1]
+            message = message[index + 1:]
+
         message = {"MESSAGES": [(client.username, recip, int(time.time()), message)]}
         message = json.dumps(message)
         message = message.encode('ascii')
