@@ -14,7 +14,6 @@ import asyncio
 
 class AsyncClient(asyncio.Protocol):
     def __init__(self):
-        self.processing_data = False
         self.__buffer = ""
         self.is_logged_in = False
         self.username = ""
@@ -30,8 +29,6 @@ class AsyncClient(asyncio.Protocol):
     def data_received(self, data):
         """simply prints any data that is received"""
         # get data into usable format
-        data_len = 0
-
         if self.__buffer == "":
             data_len = struct.unpack("!I", data[0:4])[0]
             data = data.decode('ascii')
@@ -53,8 +50,6 @@ class AsyncClient(asyncio.Protocol):
                     if data[key]:
                         self.is_logged_in = True
                         print('\nSuccessfully Logged In')
-                    else:
-                        self.processing_data = False
                 elif key == "INFO":
                     print(data[key])
                     print()
@@ -68,6 +63,18 @@ class AsyncClient(asyncio.Protocol):
                     for message in data[key]:
                         if message[1] == "ALL" or message[1] == self.username:
                             print(message[0] + ": " + message[3])
+                elif key == "USERS_JOINED":
+                    print("New User(s) Joined:")
+                    for user in data[key]:
+                        print(user)
+                    print()
+                elif key == "USERS_LEFT":
+                    print("User(s) Left:")
+                    for user in data[key]:
+                        print(user)
+                    print()
+                else:
+                    print("New message type!!! " + key + ": " + data[key])
 
 
 @asyncio.coroutine
@@ -77,32 +84,35 @@ def handle_user_input(loop, client):
     otherwise just echos user input
     """
     while not client.is_logged_in:
-        if not client.processing_data:
-            login_data = {"USERNAME": ""}
+        login_data = {"USERNAME": ""}
 
-            message = yield from loop.run_in_executor(None, input, "> Enter your username:  ")
-            if message == "quit":
-                loop.stop()
-                return
+        message = yield from loop.run_in_executor(None, input, "> Enter your username:  ")
+        if message == "quit":
+            loop.stop()
+            return
 
-            client.username = message
-            login_data["USERNAME"] = message
-            data_json = json.dumps(login_data)
-            data_bytes_json = data_json.encode('ascii')
-            byte_count = struct.pack("!I", len(data_bytes_json))
+        client.username = message
+        login_data["USERNAME"] = message
+        data_json = json.dumps(login_data)
+        data_bytes_json = data_json.encode('ascii')
+        byte_count = struct.pack("!I", len(data_bytes_json))
 
-            # The idea is we stop the client from asking for the username again until we determine if they are logged in
-            client.processing_data = True
-            client.send_message(byte_count, data_bytes_json)
+        client.send_message(byte_count, data_bytes_json)
 
-        yield from asyncio.sleep(5)
+        yield from asyncio.sleep(3)
 
     while client.is_logged_in:
+        recip = "ALL"
         message = yield from loop.run_in_executor(None, input, "> ")
         if message == "quit":
             loop.stop()
             return
+        message = {"MESSAGES": [(client.username, recip, int(time.time()), message)]}
+        message = json.dumps(message)
+        message = message.encode('ascii')
         client.send_message(struct.pack("!I", len(message)), message)
+
+        yield from asyncio.sleep(1)
 
 
 if __name__ == '__main__':
