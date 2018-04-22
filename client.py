@@ -82,7 +82,7 @@ def handle_user_input(loop, client):
         if message == "quit":
             loop.stop()
             return
-        print(message)
+        client.send_message(struct.pack("!I", len(message)), message)
 
 
 
