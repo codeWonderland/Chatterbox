@@ -1,8 +1,6 @@
 """async_client
-
 Champlain College CSI-235, Spring 2018
 Prof. Josh Auerbach
-
 Bare bones example of asynchronously receiving
 data from server and user input from stdin
 """
@@ -21,37 +19,25 @@ class AsyncClient(asyncio.Protocol):
         self.transport = transport
         self.is_logged_in = False
 
-    def send_message(self, data):
+    def send_message(self, length, data):
+        self.transport.write(length)
         self.transport.write(data)
 
     def data_received(self, data):
         """simply prints any data that is received"""
+        # data = data.decode('ascii')
+        data_len = struct.unpack("!I", data[0:4])[0]
+        data = data.decode('ascii')
+        data = data[4:(data_len + 4)]
         print("received: ", data)
 
 
 @asyncio.coroutine
 def handle_user_input(loop, client):
     """reads from stdin in separate thread
-
     if user inputs 'quit' stops the event loop
     otherwise just echos user input
     """
-    login_data = {"USERNAME": ""}
-
-    while not client.is_logged_in:
-        message = yield from loop.run_in_executor(None, input, "> Enter your username:  ")
-        if message == "quit":
-            loop.stop()
-            return
-
-        login_data["USERNAME"] = message
-        data_json = json.dumps(login_data)
-        byte_data_json = data_json.encode('ascii')
-        byte_count = struct.pack("!I", len(byte_data_json))
-
-        # while not client.gotReply:
-
-        client.send_message(byte_data_json)
 
     while client.is_logged_in:
         message = yield from loop.run_in_executor(None, input, "> ")
@@ -59,6 +45,20 @@ def handle_user_input(loop, client):
             loop.stop()
             return
         print(message)
+    else:
+        login_data = {"USERNAME": ""}
+
+        message = yield from loop.run_in_executor(None, input, "> Enter your username:  ")
+        if message == "quit":
+            loop.stop()
+            return
+
+        login_data["USERNAME"] = message
+        data_json = json.dumps(login_data)
+        data_bytes_json = data_json.encode('ascii')
+        byte_count = struct.pack("!I", len(data_bytes_json))
+
+        client.send_message(byte_count, data_bytes_json)
 
 
 if __name__ == '__main__':
