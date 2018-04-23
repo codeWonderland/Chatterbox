@@ -1,6 +1,22 @@
-# Networking-Final
+# Chatterbox
+An asyncronous chat server and client written in Python 3.
 
+## Usage
+- Clone the project
+- Navigate to the project folder in the terminal
+- If Running Server
+ - `python server.py localhost -p <port_num>`
+- If Running Client
+ - `python client.py <server_addr> -p <port_num>`
 
+### Client Interaction
+The client will ask for a username, and depending on the availability of said username may ask for a different username.
+Once the username has been established, the client will display all users online and past messages.
+At this point the user is free to type any message and send it to the chat server.
+- Prefixing a message with `@<username> ` will send a direct message to that user if they are online. Remember to put a space between the username and the message.
+Any updates on the server, logins, logouts, new messages, etc., will be automatically displayed on the client's screen as they come
+
+## Original Assignment
 Problem Statement
 For your final project you will be implementing asynchronous client and server code for a chat program that will operate over a secure TLS connection over TCP sockets.  It is recommended that you get this working entirely unencrypted first, before moving on to make this work with TLS.
 
