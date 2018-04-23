@@ -4,55 +4,88 @@
 # Asynchronous I/O inside an "asyncio" coroutine.
 
 # Last modified by Alice Easter && Eric Cacciavillani on 4/6/18
+import json
 
+import argparse
 import asyncio
-import zen_utils
-
-import random
-
-SERVER_RESPONSES = [b"It is certain.", b"It is decidedly so.",
-                    b"Without a doubt!", b"Yes definitely.",
-                    b"You may rely on it!", b"As I see it, yes.",
-                    b"Most likely.", b"Outlook good!",
-                    b"Yes!", b"Signs point to yes!",
-                    b"Reply hazy try again.", b"Ask again later!",
-                    b"Better not tell you now!", b"Cannot predict now.",
-                    b"Concentrate and ask again.", b"Don't count on it.",
-                    b"My reply is no!", b"My sources say no.",
-                    b"Outlook not so good!", b"Very doubtful."]
+import struct
 
 
-@asyncio.coroutine
-def handle_conversation(reader, writer):
-    address = writer.get_extra_info('peername')
-    print('Accepted connection from {}'.format(address))
-    try:
-        while True:
-            data = b''
-            while not data.endswith(b'?'):
-                more_data = yield from reader.read(4096)
-                if not more_data:
-                    if data:
-                        print('Client {} sent {!r} but then closed'
-                              .format(address, data))
+class AsyncServer(asyncio.Protocol):
+    def __init__(self):
+        super().__init__()
+        self.userlist = []
+        self.__buffer = ""
+
+    def connection_made(self, transport):
+        self.transport = transport
+
+    def send_message(self, data):
+        self.transport.write(struct.pack("!I", len(data)))
+        self.transport.write(data)
+
+    def data_received(self, data):
+        if self.__buffer == "":
+            data_len = struct.unpack("!I", data[0:4])[0]
+            data = data.decode('ascii')
+            data = data[4:(data_len + 4)]
+        else:
+            data = data.decode('ascii')
+
+        if data[0] == '{':
+            self.__buffer = data
+        else:
+            self.__buffer += data
+
+        if data[-1] == '}':
+            data = json.loads(self.__buffer)
+            self.__buffer = ''
+
+            for key in data:
+                if key == "USERNAME":
+                    user_accept = {"USERNAME_ACCEPTED": False}
+                    if data[key] not in self.userlist:
+                        user_accept["USERNAME_ACCEPTED"] = True
+                        user_accept["INFO"] = "Welcome to the server!"
+                        self.userlist.append(data[key])
+
+                        self.new_user(data[key])
                     else:
-                        print('Client {} closed socket normally'.format(address))
-                    return
-                data += more_data
-            answer = SERVER_RESPONSES[random.randint(0, 19)]
-            writer.write(answer)
+                        user_accept["USERNAME_ACCEPTED"] = False
 
-    except ...:
-        print('Error in handle_conversation()')
-        return
+                    user_accept = json.dumps(user_accept).encode('ascii')
+                    self.send_message(user_accept)
+
+                elif key == "MESSAGES":
+                    for message in data[key]:
+                        print(message[0] + ": " + message[3])
+
+                else:
+                    print("New message type!!! " + key + ": " + data[key])
+
+    def new_user(self, username):
+        user_message = {"USERS_JOINED": [username]}
+        user_message = json.dumps(user_message).encode('ascii')
+        self.send_message(user_message)
+
+    def connection_lost(self, exc):
+        print(exc)
 
 
 if __name__ == '__main__':
-    address = zen_utils.parse_command_line('asyncio server using coroutine')
+    parser = argparse.ArgumentParser(description='Example Server')
+    parser.add_argument('host', help='IP or hostname')
+    parser.add_argument('-p', metavar='port', type=int, default=9000,
+                        help='TCP port (default 9000)')
+    args = parser.parse_args()
+
     loop = asyncio.get_event_loop()
-    coro = asyncio.start_server(handle_conversation, *address)
+
+    coro = loop.create_server(AsyncServer, *(args.host, args.p))
+
     server = loop.run_until_complete(coro)
-    print('Listening at {}'.format(address))
+    print('Listening at {}'.format((args.host, args.p)))
+
     try:
         loop.run_forever()
     finally:
