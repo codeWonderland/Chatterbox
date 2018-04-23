@@ -41,7 +41,6 @@ class AsyncClient(asyncio.Protocol):
         self.__buffer += data
 
         if len(self.__buffer) == self.data_len:
-            print(self.__buffer)
             data = json.loads(self.__buffer)
             self.__buffer = ''
             self.data_len = 0
@@ -109,7 +108,7 @@ def handle_user_input(loop, client):
             return
 
         # Checking for DM
-        if message[0] == '@':
+        if len(message) != 0 and message[0] == '@':
             index = message.find(' ')
             recip = message[1:index + 1]
             message = message[index + 1:]
