@@ -4,9 +4,9 @@ An asyncronous chat server and client written in Python 3.
 ## Usage
 - Clone the project
 - Navigate to the project folder in the terminal
-- If Running Server
+- If Running Server:
     - `python server.py localhost -p <port_num>`
-- If Running Client
+- If Running Client:
     - `python client.py <server_addr> -p <port_num>`
 
 ### Client Interaction
