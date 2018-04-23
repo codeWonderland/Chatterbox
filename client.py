@@ -24,8 +24,10 @@ class AsyncClient(asyncio.Protocol):
         self.is_logged_in = False
 
     def send_message(self, data):
-        self.transport.write(struct.pack("!I", len(data)))
-        self.transport.write(data)
+        msg = b''
+        msg += struct.pack("!I", len(data))
+        msg += data
+        self.transport.write(msg)
 
     def data_received(self, data):
         """simply prints any data that is received"""
@@ -98,7 +100,7 @@ def handle_user_input(loop, client):
 
         client.send_message(data_bytes_json)
 
-        yield from asyncio.sleep(3)
+        yield from asyncio.sleep(1)
 
     while client.is_logged_in:
         recip = "ALL"

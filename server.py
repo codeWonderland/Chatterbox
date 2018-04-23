@@ -16,30 +16,36 @@ class AsyncServer(asyncio.Protocol):
         super().__init__()
         self.userlist = []
         self.__buffer = ""
+        self.data_len = 0
 
     def connection_made(self, transport):
         self.transport = transport
 
     def send_message(self, data):
-        self.transport.write(struct.pack("!I", len(data)))
-        self.transport.write(data)
+        msg = b''
+        msg += struct.pack("!I", len(data))
+        msg += data
+        self.transport.write(msg)
+
+    def broadcast(self, data):
+        # TODO: Figure out how to broadcast to all users
+        self.send_message(data)
 
     def data_received(self, data):
-        if self.__buffer == "":
-            data_len = struct.unpack("!I", data[0:4])[0]
-            data = data.decode('ascii')
-            data = data[4:(data_len + 4)]
-        else:
-            data = data.decode('ascii')
+        if self.__buffer == '':
+            # Find first brace and offset the data by that
+            brace_index = data.find(b'{')
+            self.data_len = struct.unpack("!I", data[0:brace_index])[0]
+            data = data[brace_index:(self.data_len + brace_index)]
 
-        if data[0] == '{':
-            self.__buffer = data
-        else:
-            self.__buffer += data
+        data = data.decode('ascii')
 
-        if data[-1] == '}':
+        self.__buffer += data
+
+        if len(self.__buffer) == self.data_len:
             data = json.loads(self.__buffer)
-            self.__buffer = ''
+            self.__buffer = ""
+            self.data_len = 0
 
             for key in data:
                 if key == "USERNAME":
@@ -48,17 +54,23 @@ class AsyncServer(asyncio.Protocol):
                         user_accept["USERNAME_ACCEPTED"] = True
                         user_accept["INFO"] = "Welcome to the server!"
                         self.userlist.append(data[key])
-
-                        self.new_user(data[key])
                     else:
                         user_accept["USERNAME_ACCEPTED"] = False
 
-                    user_accept = json.dumps(user_accept).encode('ascii')
-                    self.send_message(user_accept)
+                    msg = json.dumps(user_accept).encode('ascii')
+                    self.send_message(msg)
+
+                    if user_accept["USERNAME_ACCEPTED"]:
+                        self.new_user(data[key])
 
                 elif key == "MESSAGES":
+                    msg = {"MESSAGES": []}
                     for message in data[key]:
                         print(message[0] + ": " + message[3])
+                        msg["MESSAGES"].append(message)
+
+                    msg = json.dumps(msg).encode('ascii')
+                    self.broadcast(msg)
 
                 else:
                     print("New message type!!! " + key + ": " + data[key])
@@ -85,6 +97,8 @@ if __name__ == '__main__':
 
     server = loop.run_until_complete(coro)
     print('Listening at {}'.format((args.host, args.p)))
+
+
 
     try:
         loop.run_forever()
