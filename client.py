@@ -75,8 +75,9 @@ class AsyncClient(asyncio.Protocol):
                     for user in data[key]:
                         print(user)
                     print()
+                # Encapsulates error and other servers' additional features
                 else:
-                    print("New message type!!! " + key + ": " + data[key])
+                    print(key + ": " + data[key])
 
 
 @asyncio.coroutine
@@ -112,7 +113,7 @@ def handle_user_input(loop, client):
         # Checking for DM
         if len(message) != 0 and message[0] == '@':
             index = message.find(' ')
-            recip = message[1:index + 1]
+            recip = message[1:index]
             message = message[index + 1:]
 
         message = {"MESSAGES": [(client.username, recip, int(time.time()), message)]}

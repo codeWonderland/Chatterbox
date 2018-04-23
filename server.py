@@ -12,18 +12,20 @@ import struct
 
 
 class AsyncServer(asyncio.Protocol):
-    transport_list = []
-    userlist = []
+    transport_map = {}
+    messages = []
 
     def __init__(self):
         super().__init__()
+        self.username = ""
+        self.thread_transport = None
         self.current_transport = None
         self.__buffer = ""
         self.data_len = 0
 
     def connection_made(self, transport):
+        self.thread_transport = transport
         self.current_transport = transport
-        AsyncServer.transport_list.append(transport)
 
     def send_message(self, data):
         msg = b''
@@ -31,10 +33,22 @@ class AsyncServer(asyncio.Protocol):
         msg += data
         self.current_transport.write(msg)
 
-    def broadcast(self, data):
-        for trans in AsyncServer.transport_list:
-            self.current_transport = trans
+    def broadcast(self, audience, data):
+        if audience is self.username:
+            self.current_transport = self.thread_transport
             self.send_message(data)
+        elif audience == 'ALL':
+            for trans in AsyncServer.transport_map:
+                self.current_transport = AsyncServer.transport_map[trans]
+                self.send_message(data)
+        elif audience in AsyncServer.transport_map:
+            self.current_transport = AsyncServer.transport_map[audience]
+            self.send_message(data)
+        else:
+            self.current_transport = self.thread_transport
+            msg = {"ERROR": "Specified username does not exist (or at least is not online)"}
+            msg = json.dumps(msg).encode('ascii')
+            self.send_message(msg)
 
     def data_received(self, data):
         if self.__buffer == '':
@@ -54,39 +68,65 @@ class AsyncServer(asyncio.Protocol):
 
             for key in data:
                 if key == "USERNAME":
-                    user_accept = {"USERNAME_ACCEPTED": False}
-                    if data[key] not in self.userlist:
-                        user_accept["USERNAME_ACCEPTED"] = True
-                        user_accept["INFO"] = "Welcome to the server!"
-                        AsyncServer.userlist.append(data[key])
-                    else:
-                        user_accept["USERNAME_ACCEPTED"] = False
-
-                    msg = json.dumps(user_accept).encode('ascii')
-                    self.send_message(msg)
-
-                    if user_accept["USERNAME_ACCEPTED"]:
-                        self.new_user(data[key])
+                    self.make_user(data)
 
                 elif key == "MESSAGES":
-                    msg = {"MESSAGES": []}
-                    for message in data[key]:
-                        print(message[0] + ": " + message[3])
-                        msg["MESSAGES"].append(message)
-
-                    msg = json.dumps(msg).encode('ascii')
-                    self.broadcast(msg)
+                    self.handle_messages(data)
 
                 else:
                     print("New message type!!! " + key + ": " + data[key])
 
+    def make_user(self, data):
+        key = "USERNAME"
+        user_accept = {"USERNAME_ACCEPTED": False}
+
+        if data[key] not in AsyncServer.transport_map:
+            user_accept["USERNAME_ACCEPTED"] = True
+            user_accept["INFO"] = "Welcome to the server!"
+            self.username = data[key]
+            AsyncServer.transport_map[data[key]] = self.thread_transport
+
+            users_online = []
+            for user in AsyncServer.transport_map:
+                users_online.append(user)
+
+            user_accept["USER_LIST"] = users_online
+
+            user_accept["MESSAGES"] = AsyncServer.messages
+
+        else:
+            user_accept["USERNAME_ACCEPTED"] = False
+
+        msg = json.dumps(user_accept).encode('ascii')
+        self.send_message(msg)
+
+        if user_accept["USERNAME_ACCEPTED"]:
+            self.new_user(data[key])
+
     def new_user(self, username):
         user_message = {"USERS_JOINED": [username]}
         user_message = json.dumps(user_message).encode('ascii')
-        self.send_message(user_message)
+        self.broadcast("ALL", user_message)
+
+    def handle_messages(self, data):
+        msg = {"MESSAGES": []}
+        for message in data["MESSAGES"]:
+            if message[1] == 'ALL':
+                msg["MESSAGES"].append(message)
+                AsyncServer.messages.append(message)
+            else:
+                dm = {"MESSAGES": [message]}
+                dm = json.dumps(dm).encode('ascii')
+                self.broadcast(message[1], dm)
+
+        msg = json.dumps(msg).encode('ascii')
+        self.broadcast("ALL", msg)
 
     def connection_lost(self, exc):
-        print(exc)
+        AsyncServer.transport_map.pop(self.username)
+        msg = {"USERS_LEFT": [self.username]}
+        msg = json.dumps(msg).encode('ascii')
+        self.broadcast("ALL", msg)
 
 
 if __name__ == '__main__':
