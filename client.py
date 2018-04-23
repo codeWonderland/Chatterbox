@@ -17,33 +17,34 @@ class AsyncClient(asyncio.Protocol):
         self.__buffer = ""
         self.is_logged_in = False
         self.username = ""
+        self.data_len = 0
 
     def connection_made(self, transport):
         self.transport = transport
         self.is_logged_in = False
 
-    def send_message(self, length, data):
-        self.transport.write(length)
+    def send_message(self, data):
+        self.transport.write(struct.pack("!I", len(data)))
         self.transport.write(data)
 
     def data_received(self, data):
         """simply prints any data that is received"""
         # get data into usable format
-        if self.__buffer == "":
-            data_len = struct.unpack("!I", data[0:4])[0]
-            data = data.decode('ascii')
-            data = data[4:(data_len + 4)]
-        else:
-            data = data.decode('ascii')
+        if self.__buffer == '':
+            # Find first brace and offset the data by that
+            brace_index = data.find(b'{')
+            self.data_len = struct.unpack("!I", data[0:brace_index])[0]
+            data = data[brace_index:(self.data_len + brace_index)]
 
-        if data[0] == '{':
-            self.__buffer = data
-        else:
-            self.__buffer += data
+        data = data.decode('ascii')
 
-        if data[-1] == '}':
+        self.__buffer += data
+
+        if len(self.__buffer) == self.data_len:
+            print(self.__buffer)
             data = json.loads(self.__buffer)
             self.__buffer = ''
+            self.data_len = 0
 
             for key in data:
                 if key == "USERNAME_ACCEPTED":
@@ -95,9 +96,8 @@ def handle_user_input(loop, client):
         login_data["USERNAME"] = message
         data_json = json.dumps(login_data)
         data_bytes_json = data_json.encode('ascii')
-        byte_count = struct.pack("!I", len(data_bytes_json))
 
-        client.send_message(byte_count, data_bytes_json)
+        client.send_message(data_bytes_json)
 
         yield from asyncio.sleep(3)
 
@@ -117,7 +117,7 @@ def handle_user_input(loop, client):
         message = {"MESSAGES": [(client.username, recip, int(time.time()), message)]}
         message = json.dumps(message)
         message = message.encode('ascii')
-        client.send_message(struct.pack("!I", len(message)), message)
+        client.send_message(message)
 
         yield from asyncio.sleep(1)
 
@@ -142,6 +142,7 @@ if __name__ == '__main__':
 
     # Start a task which reads from standard input
     asyncio.async(handle_user_input(loop, client))
+
 
     try:
         loop.run_forever()
