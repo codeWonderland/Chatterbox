@@ -12,24 +12,29 @@ import struct
 
 
 class AsyncServer(asyncio.Protocol):
+    transport_list = []
+    userlist = []
+
     def __init__(self):
         super().__init__()
-        self.userlist = []
+        self.current_transport = None
         self.__buffer = ""
         self.data_len = 0
 
     def connection_made(self, transport):
-        self.transport = transport
+        self.current_transport = transport
+        AsyncServer.transport_list.append(transport)
 
     def send_message(self, data):
         msg = b''
         msg += struct.pack("!I", len(data))
         msg += data
-        self.transport.write(msg)
+        self.current_transport.write(msg)
 
     def broadcast(self, data):
-        # TODO: Figure out how to broadcast to all users
-        self.send_message(data)
+        for trans in AsyncServer.transport_list:
+            self.current_transport = trans
+            self.send_message(data)
 
     def data_received(self, data):
         if self.__buffer == '':
@@ -53,7 +58,7 @@ class AsyncServer(asyncio.Protocol):
                     if data[key] not in self.userlist:
                         user_accept["USERNAME_ACCEPTED"] = True
                         user_accept["INFO"] = "Welcome to the server!"
-                        self.userlist.append(data[key])
+                        AsyncServer.userlist.append(data[key])
                     else:
                         user_accept["USERNAME_ACCEPTED"] = False
 
