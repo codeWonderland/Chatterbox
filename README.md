@@ -5,9 +5,9 @@ An asyncronous chat server and client written in Python 3.
 - Clone the project
 - Navigate to the project folder in the terminal
 - If Running Server
- - `python server.py localhost -p <port_num>`
+    - `python server.py localhost -p <port_num>`
 - If Running Client
- - `python client.py <server_addr> -p <port_num>`
+    - `python client.py <server_addr> -p <port_num>`
 
 ### Client Interaction
 The client will ask for a username, and depending on the availability of said username may ask for a different username.
