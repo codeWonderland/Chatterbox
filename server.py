@@ -50,22 +50,18 @@ class AsyncServer(asyncio.Protocol):
 
     def broadcast(self, audience, data):
         if audience is self.username:
-            
-            print(data)
             self.current_transport = self.thread_transport
             self.send_message(data)
         elif audience == 'ALL':
-            
             for user in AsyncServer.transport_map:
                 
-                if (user in AsyncServer.client_blocked_users) and self.username in AsyncServer.client_blocked_users[user]:
-                    # print('Blocked hit')    
-                    pass
-                else:
+                if not ((user in AsyncServer.client_blocked_users) and self.username in AsyncServer.client_blocked_users[user]):
                     self.current_transport = AsyncServer.transport_map[user]
                     self.send_message(data)
+                    
         # HERE TOO
         elif audience in AsyncServer.transport_map:
+            
             self.current_transport = AsyncServer.transport_map[audience]
             self.send_message(data)
         else:
@@ -138,7 +134,7 @@ class AsyncServer(asyncio.Protocol):
         msg = {"MESSAGES": []}
         
         for message in data["MESSAGES"]:
-            print(message)
+            
             if message[3].startswith('/'):  
                 
                 tokenized_message = message[3].split()
@@ -239,8 +235,10 @@ class AsyncServer(asyncio.Protocol):
                 else:
                     pass
             elif message[1] == 'ALL':
-                msg["MESSAGES"].append(message)
-                AsyncServer.messages.append(message)
+                
+                if not ((user in AsyncServer.client_blocked_users) and self.username in AsyncServer.client_blocked_users[user]):
+                    msg["MESSAGES"].append(message)
+                    AsyncServer.messages.append(message)
             else:
                 dm = {"MESSAGES": [message]}
                 dm = json.dumps(dm).encode('ascii')
