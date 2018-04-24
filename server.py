@@ -91,6 +91,7 @@ class AsyncServer(asyncio.Protocol):
                     self.make_user(data)
 
                 elif key == "MESSAGES":
+                    print("Testing")
                     self.handle_messages(data)
 
                 else:
@@ -134,7 +135,7 @@ class AsyncServer(asyncio.Protocol):
         msg = {"MESSAGES": []}
         
         for message in data["MESSAGES"]:
-            
+            print(message)
             if message[3].startswith('/'):  
                 
                 tokenized_message = message[3].split()
@@ -235,8 +236,8 @@ class AsyncServer(asyncio.Protocol):
                 else:
                     pass
             elif message[1] == 'ALL':
-                
-                if not ((user in AsyncServer.client_blocked_users) and self.username in AsyncServer.client_blocked_users[user]):
+                print('Testing')
+                if ((self.username in AsyncServer.client_blocked_users) and message[0] in AsyncServer.client_blocked_users[self.username]):
                     msg["MESSAGES"].append(message)
                     AsyncServer.messages.append(message)
             else:
