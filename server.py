@@ -141,11 +141,9 @@ class AsyncServer(asyncio.Protocol):
             user_accept["USER_LIST"] = users_online
 
             message_dump = AsyncServer.messages
-            '''
+
             if self.username in AsyncServer.client_blocked_users:
                 message_dump = list(filter(lambda message: message[0] not in AsyncServer.client_blocked_users[self.username], message_dump))
-
-            '''
 
             user_accept["MESSAGES"] = message_dump
 
