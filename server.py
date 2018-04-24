@@ -26,17 +26,21 @@ class AsyncServer(asyncio.Protocol):
         self.current_transport = None
         self.__buffer = ""
         self.data_len = 0
-        
+        '''
         with open('server_data.pkl', 'rb') as f:
             AsyncServer.messages = pickle.load(f)
             AsyncServer.all_users_ever_logged = pickle.load(f)
             AsyncServer.client_blocked_users = pickle.load(f)
+        '''
 
     def __del__(self):
+        '''
         with open('server_data.pkl', 'wb') as f:
             pickle.dump(AsyncServer.messages, f)
             pickle.dump(AsyncServer.all_users_ever_logged, f)
             pickle.dump(AsyncServer.client_blocked_users, f)
+        '''
+        pass
 
     def connection_made(self, transport):
         self.thread_transport = transport
@@ -54,21 +58,32 @@ class AsyncServer(asyncio.Protocol):
             self.send_message(data)
         elif audience == 'ALL':
             for user in AsyncServer.transport_map:
-                
-                if user in AsyncServer.client_blocked_users:
-                    if self.username not in AsyncServer.client_blocked_users[user]:
+
+                if (self.username in AsyncServer.client_blocked_users):
+
+                    if (user not in AsyncServer.client_blocked_users[self.username]):
                         self.current_transport = AsyncServer.transport_map[user]
                         self.send_message(data)
-                elif self.username in AsyncServer.client_blocked_users:
-                    if user not in AsyncServer.client_blocked_users[self.username]:
-                        self.current_transport = AsyncServer.transport_map[user]
-                        self.send_message(data)
-                    
+                else:
+                    self.current_transport = AsyncServer.transport_map[user]
+                    self.send_message(data)
+
         # HERE TOO
         elif audience in AsyncServer.transport_map:
-            
-            self.current_transport = AsyncServer.transport_map[audience]
-            self.send_message(data)
+            if (audience in AsyncServer.client_blocked_users):
+
+                if (self.username not in AsyncServer.client_blocked_users[audience]):
+                    print("second")
+                    print(AsyncServer.client_blocked_users[self.username])
+                    print(audience)
+                    self.current_transport = AsyncServer.transport_map[audience]
+                    self.send_message(data)
+                else:
+                    print(data)
+            else:
+                self.current_transport = AsyncServer.transport_map[audience]
+                self.send_message(data)
+
         else:
             self.current_transport = self.thread_transport
             msg = {"ERROR": "Specified username does not exist (or at least is not online)"}
@@ -119,6 +134,12 @@ class AsyncServer(asyncio.Protocol):
             user_accept["USER_LIST"] = users_online
 
             message_dump = AsyncServer.messages
+            '''
+            if self.username in AsyncServer.client_blocked_users:
+                message_dump = list(filter(lambda message: message[0] not in AsyncServer.client_blocked_users[self.username], message_dump))
+
+            '''
+
             user_accept["MESSAGES"] = message_dump
 
         else:
@@ -167,6 +188,7 @@ class AsyncServer(asyncio.Protocol):
                             else:
                                 AsyncServer.client_blocked_users[self.username] = set()
                                 AsyncServer.client_blocked_users[self.username].add(user)
+                                print("Set ",AsyncServer.client_blocked_users[self.username])
                     
                     message[3] = server_message;
                     dm = {"MESSAGES": [message]}
