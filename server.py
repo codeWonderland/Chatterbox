@@ -17,7 +17,7 @@ class AsyncServer(asyncio.Protocol):
     transport_map = {}
     messages = []
     all_users_ever_logged = set()
-    client_blocked_users = {}
+    client_blocked_users = dict()
 
     def __init__(self):
         super().__init__()
@@ -31,8 +31,8 @@ class AsyncServer(asyncio.Protocol):
             AsyncServer.messages = pickle.load(f)
             AsyncServer.all_users_ever_logged = pickle.load(f)
             AsyncServer.client_blocked_users = pickle.load(f)
-        
     def __del__(self):
+
         with open('server_data.pkl', 'wb') as f:
             pickle.dump(AsyncServer.messages, f)
             pickle.dump(AsyncServer.all_users_ever_logged, f)
@@ -115,12 +115,6 @@ class AsyncServer(asyncio.Protocol):
             user_accept["USER_LIST"] = users_online
 
             message_dump = AsyncServer.messages
-
-            print(self.username)
-
-            if self.username in AsyncServer.client_blocked_users:
-                message_dump = map(filter(lambda message: message[0] not in AsyncServer.client_blocked_users[self.username], message_dump))
-
             user_accept["MESSAGES"] = message_dump
 
         else:
