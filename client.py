@@ -69,8 +69,7 @@ class AsyncClient(asyncio.Protocol):
                             time_prefix = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(message[2]))
                             
                             print("[{}] {} : {}".format(time_prefix,message[0],message[3]))
-                            
-                            
+
                 elif key == "USERS_JOINED":
                     print("New User(s) Joined:")
                     for user in data[key]:
@@ -84,6 +83,14 @@ class AsyncClient(asyncio.Protocol):
                 # Encapsulates error and other servers' additional features
                 else:
                     print(key + ": " + data[key])
+
+    def connection_lost(self, exc):
+        print('Connection to server lost')
+        print('(Press RET to exit)')
+        self.is_logged_in = False
+
+        loop.run_in_executor(None, input, "")
+        exit(0)
 
 
 @asyncio.coroutine
@@ -136,6 +143,8 @@ def handle_user_input(loop, client):
 
         yield from asyncio.sleep(1)
 
+    return
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Example client')
@@ -161,7 +170,6 @@ if __name__ == '__main__':
 
     # Start a task which reads from standard input
     asyncio.async(handle_user_input(loop, client))
-
 
     try:
         loop.run_forever()
