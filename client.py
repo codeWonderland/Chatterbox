@@ -64,7 +64,12 @@ class AsyncClient(asyncio.Protocol):
                 elif key == "MESSAGES":
                     for message in data[key]:
                         if message[1] == "ALL" or message[1] == self.username:
-                            print(message[0] + ": " + message[3])
+                            
+                            time_prefix = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(message[2]))
+                            
+                            print("[{}] {} : {}".format(time_prefix,message[0],message[3]))
+                            
+                            
                 elif key == "USERS_JOINED":
                     print("New User(s) Joined:")
                     for user in data[key]:
@@ -102,6 +107,9 @@ def handle_user_input(loop, client):
         client.send_message(data_bytes_json)
 
         yield from asyncio.sleep(1)
+        
+        if not client.is_logged_in:
+            print("This user has already been signed into the current server session!!!")
 
     while client.is_logged_in:
         recip = "ALL"
@@ -115,7 +123,11 @@ def handle_user_input(loop, client):
             index = message.find(' ')
             recip = message[1:index]
             message = message[index + 1:]
-
+            
+        # Checking for command
+        elif len(message) != 0 and message[0] == '/':
+            recip = client.username
+        
         message = {"MESSAGES": [(client.username, recip, int(time.time()), message)]}
         message = json.dumps(message)
         message = message.encode('ascii')
