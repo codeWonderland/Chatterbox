@@ -27,12 +27,10 @@ class AsyncServer(asyncio.Protocol):
         self.__buffer = ""
         self.data_len = 0
 
-        '''
         with open('server_data.pkl', 'rb') as f:
             AsyncServer.messages = pickle.load(f)
             AsyncServer.all_users_ever_logged = pickle.load(f)
             AsyncServer.client_blocked_users = pickle.load(f)
-        '''
 
     def connection_made(self, transport):
         self.thread_transport = transport
