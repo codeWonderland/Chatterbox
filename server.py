@@ -8,6 +8,7 @@ import json
 
 import argparse
 import asyncio
+import ssl
 import struct
 import pickle
 
@@ -265,7 +266,11 @@ if __name__ == '__main__':
 
     loop = asyncio.get_event_loop()
 
-    coro = loop.create_server(AsyncServer, *(args.host, args.p))
+    purpose = ssl.Purpose.CLIENT_AUTH
+    context = ssl.create_default_context(purpose, cafile='ca.crt')
+    context.load_cert_chain('localhost.pem')
+
+    coro = loop.create_server(AsyncServer, *(args.host, args.p), ssl=context)
 
     server = loop.run_until_complete(coro)
     print('Listening at {}'.format((args.host, args.p)))

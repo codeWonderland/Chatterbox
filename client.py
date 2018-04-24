@@ -5,6 +5,7 @@ Bare bones example of asynchronously receiving
 data from server and user input from stdin
 """
 import json
+import ssl
 import struct
 import time
 
@@ -150,7 +151,9 @@ if __name__ == '__main__':
 
     # the lambda client serves as a factory that just returns
     # the client instance we just created
-    coro = loop.create_connection(lambda: client, args.host, args.p)
+    purpose = ssl.Purpose.SERVER_AUTH
+    context = ssl.create_default_context(purpose, cafile='ca.crt')
+    coro = loop.create_connection(lambda: client, host=args.host, port=args.p, ssl=context, server_hostname='localhost')
 
     loop.run_until_complete(coro)
 
