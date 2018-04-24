@@ -114,7 +114,14 @@ class AsyncServer(asyncio.Protocol):
 
             user_accept["USER_LIST"] = users_online
 
-            user_accept["MESSAGES"] = AsyncServer.messages
+            message_dump = AsyncServer.messages
+
+            print(self.username)
+
+            if self.username in AsyncServer.client_blocked_users:
+                message_dump = map(filter(lambda message: message[0] not in AsyncServer.client_blocked_users[self.username], message_dump))
+
+            user_accept["MESSAGES"] = message_dump
 
         else:
             user_accept["USERNAME_ACCEPTED"] = False
@@ -134,7 +141,7 @@ class AsyncServer(asyncio.Protocol):
 
     def handle_messages(self, data):
         msg = {"MESSAGES": []}
-        
+
         for message in data["MESSAGES"]:
             print(message)
             if message[3].startswith('/'):  
@@ -186,7 +193,7 @@ class AsyncServer(asyncio.Protocol):
                                 server_message += (" " + user)
                                 
                                 if self.username in AsyncServer.client_blocked_users:
-                                    AsyncServer.client_blocked_users[self.username].remove(user)
+                                    AsyncServer.client_blocked_users = AsyncServer.client_blocked_users[self.username].remove(user)
                         
                         message[3] = server_message;
                         dm = {"MESSAGES": [message]}
@@ -194,8 +201,7 @@ class AsyncServer(asyncio.Protocol):
                         self.broadcast(message[1], dm)
                         
                 elif tokenized_message[0] == '/Blocked':
-                    
-                    server_message = str()
+
                     if self.username in AsyncServer.client_blocked_users and len(AsyncServer.client_blocked_users[self.username]) != 0:
                         blocked_users_set = AsyncServer.client_blocked_users[self.username]
                         server_message = "You currently have these users blocked: " + " ".join(str(user) for user in blocked_users_set)
