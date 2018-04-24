@@ -142,6 +142,8 @@ if __name__ == '__main__':
     parser.add_argument('host', help='IP or hostname')
     parser.add_argument('-p', metavar='port', type=int, default=9000,
                         help='TCP port (default 9000)')
+    parser.add_argument('-ca', dest='cafile', metavar='cafile', type=str, default=None,
+                        help='CA File')
     args = parser.parse_args()
 
     loop = asyncio.get_event_loop()
@@ -152,8 +154,8 @@ if __name__ == '__main__':
     # the lambda client serves as a factory that just returns
     # the client instance we just created
     purpose = ssl.Purpose.SERVER_AUTH
-    context = ssl.create_default_context(purpose, cafile='ca.crt')
-    coro = loop.create_connection(lambda: client, host=args.host, port=args.p, ssl=context, server_hostname='localhost')
+    context = ssl.create_default_context(purpose, cafile=args.cafile)
+    coro = loop.create_connection(lambda: client, host=args.host, port=args.p, ssl=context, server_hostname=args.host)
 
     loop.run_until_complete(coro)
 
