@@ -31,13 +31,12 @@ class AsyncServer(asyncio.Protocol):
             AsyncServer.messages = pickle.load(f)
             AsyncServer.all_users_ever_logged = pickle.load(f)
             AsyncServer.client_blocked_users = pickle.load(f)
-    def __del__(self):
 
+    def __del__(self):
         with open('server_data.pkl', 'wb') as f:
             pickle.dump(AsyncServer.messages, f)
             pickle.dump(AsyncServer.all_users_ever_logged, f)
             pickle.dump(AsyncServer.client_blocked_users, f)
-        
 
     def connection_made(self, transport):
         self.thread_transport = transport
@@ -56,9 +55,14 @@ class AsyncServer(asyncio.Protocol):
         elif audience == 'ALL':
             for user in AsyncServer.transport_map:
                 
-                if not ((user in AsyncServer.client_blocked_users) and self.username in AsyncServer.client_blocked_users[user]):
-                    self.current_transport = AsyncServer.transport_map[user]
-                    self.send_message(data)
+                if user in AsyncServer.client_blocked_users:
+                    if self.username not in AsyncServer.client_blocked_users[user]:
+                        self.current_transport = AsyncServer.transport_map[user]
+                        self.send_message(data)
+                elif self.username in AsyncServer.client_blocked_users:
+                    if user not in AsyncServer.client_blocked_users[self.username]:
+                        self.current_transport = AsyncServer.transport_map[user]
+                        self.send_message(data)
                     
         # HERE TOO
         elif audience in AsyncServer.transport_map:
@@ -126,7 +130,6 @@ class AsyncServer(asyncio.Protocol):
         if user_accept["USERNAME_ACCEPTED"]:
             self.new_user(data[key])
             AsyncServer.all_users_ever_logged.add(data[key])
-            
 
     def new_user(self, username):
         user_message = {"USERS_JOINED": [username]}
@@ -169,8 +172,7 @@ class AsyncServer(asyncio.Protocol):
                     dm = {"MESSAGES": [message]}
                     dm = json.dumps(dm).encode('ascii')
                     self.broadcast(message[1], dm)
-                    
-                    
+
                 elif tokenized_message[0] == '/UnBlock':
                     
                     if self.username in AsyncServer.client_blocked_users:
@@ -189,7 +191,7 @@ class AsyncServer(asyncio.Protocol):
                                 if self.username in AsyncServer.client_blocked_users:
                                     AsyncServer.client_blocked_users = AsyncServer.client_blocked_users[self.username].remove(user)
                         
-                        message[3] = server_message;
+                        message[3] = server_message
                         dm = {"MESSAGES": [message]}
                         dm = json.dumps(dm).encode('ascii')
                         self.broadcast(message[1], dm)
@@ -214,8 +216,7 @@ class AsyncServer(asyncio.Protocol):
                     dm = {"MESSAGES": [message]}
                     dm = json.dumps(dm).encode('ascii')
                     self.broadcast(message[1], dm)
-                    
-                    
+
                 elif message[3] == '/DisplayAllUsers':
                     
                     server_message = '\n\n   ALL USER(S)\n' + str('-'*22) + '\n'
@@ -227,8 +228,7 @@ class AsyncServer(asyncio.Protocol):
                             server_message = server_message + ' : ONLINE'
                         else:
                             server_message = server_message + ' : OFFLINE'
-                            
-                    
+
                     message[3] = server_message
                     dm = {"MESSAGES": [message]}
                     dm = json.dumps(dm).encode('ascii')
@@ -236,11 +236,10 @@ class AsyncServer(asyncio.Protocol):
                     
                 else:
                     pass
+
             elif message[1] == 'ALL':
-                print('Testing')
-                if ((self.username in AsyncServer.client_blocked_users) and message[0] in AsyncServer.client_blocked_users[self.username]):
-                    msg["MESSAGES"].append(message)
-                    AsyncServer.messages.append(message)
+                msg["MESSAGES"].append(message)
+                AsyncServer.messages.append(message)
             else:
                 dm = {"MESSAGES": [message]}
                 dm = json.dumps(dm).encode('ascii')
