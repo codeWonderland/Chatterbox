@@ -266,6 +266,8 @@ class AsyncServer(asyncio.Protocol):
                         dm = json.dumps(dm).encode('ascii')
                         self.broadcast(message[0], dm)
 
+                # COMMAND: /Blocked
+                # FUNCTION: shows all users whom the client has blocked
                 elif tokenized_message[0] == '/Blocked':
 
                     if AsyncServer.client_blocked_users is not None and \
