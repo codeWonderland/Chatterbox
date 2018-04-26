@@ -11,13 +11,15 @@ import asyncio
 import ssl
 import struct
 import pickle
+from collections import defaultdict
+
 
 
 class AsyncServer(asyncio.Protocol):
     transport_map = {}  # Map of usernames to transports
     messages = []  # All messages for dump to user upon login
     all_users_ever_logged = set()  # Init a set of all users ever logged into the server
-    client_blocked_users = dict()  # Shows the relationship between given users and their blocked user names
+    client_blocked_users = defaultdict(dict)  # Shows the relationship between given users and their blocked user names
 
     def __init__(self):
         super().__init__()
@@ -35,11 +37,20 @@ class AsyncServer(asyncio.Protocol):
         self.__buffer = ""
         self.data_len = 0
 
-        # Pull data from db upon client init
+        #Pull data from db upon client init
         with open('server_data.pkl', 'rb') as f:
             AsyncServer.messages = pickle.load(f)
             AsyncServer.all_users_ever_logged = pickle.load(f)
             AsyncServer.client_blocked_users = pickle.load(f)
+
+        if AsyncServer.client_blocked_users is None:
+            AsyncServer.client_blocked_users = defaultdict(dict)
+
+        if AsyncServer.messages is None:
+            AsyncServer.messages = list()
+
+        if AsyncServer.all_users_ever_logged is None:
+            AsyncServer.all_users_ever_logged = set()
 
     def connection_made(self, transport):
         self.thread_transport = transport
@@ -229,6 +240,9 @@ class AsyncServer(asyncio.Protocol):
                             if AsyncServer.client_blocked_users is not None and self.username in AsyncServer.client_blocked_users:
                                 AsyncServer.client_blocked_users[self.username].add(user)
                             else:
+
+                                print(type(AsyncServer.client_blocked_users))
+                                AsyncServer.client_blocked_users[self.username]
                                 AsyncServer.client_blocked_users[self.username] = set()
                                 AsyncServer.client_blocked_users[self.username].add(user)
                                 print("Set ", AsyncServer.client_blocked_users[self.username])
