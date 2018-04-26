@@ -3,6 +3,8 @@ Champlain College CSI-235, Spring 2018
 Prof. Josh Auerbach
 Bare bones example of asynchronously receiving
 data from server and user input from stdin
+
+Last modified by Alice Easter && Eric Cacciavillani on 4/26/18
 """
 import json
 import ssl
