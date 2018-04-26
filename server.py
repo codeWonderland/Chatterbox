@@ -36,10 +36,12 @@ class AsyncServer(asyncio.Protocol):
         self.data_len = 0
 
         # Pull data from db upon client init
+        '''
         with open('server_data.pkl', 'rb') as f:
             AsyncServer.messages = pickle.load(f)
             AsyncServer.all_users_ever_logged = pickle.load(f)
             AsyncServer.client_blocked_users = pickle.load(f)
+        '''
 
     def connection_made(self, transport):
         self.thread_transport = transport
@@ -341,10 +343,10 @@ class AsyncServer(asyncio.Protocol):
         msg = json.dumps(msg).encode('ascii')
         self.broadcast("ALL", msg)
 
-        with open('server_data.pkl', 'wb') as f:
-            pickle.dump(AsyncServer.messages, f)
-            pickle.dump(AsyncServer.all_users_ever_logged, f)
-            pickle.dump(AsyncServer.client_blocked_users, f)
+        # with open('server_data.pkl', 'wb') as f:
+        #     pickle.dump(AsyncServer.messages, f)
+        #     pickle.dump(AsyncServer.all_users_ever_logged, f)
+        #     pickle.dump(AsyncServer.client_blocked_users, f)
 
 
 if __name__ == '__main__':
