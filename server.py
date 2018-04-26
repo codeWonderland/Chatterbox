@@ -70,16 +70,16 @@ class AsyncServer(asyncio.Protocol):
             for user in AsyncServer.transport_map:
 
                 # Ensures user messages to be properly blocked
-                if self.username in AsyncServer.client_blocked_users:
+                if AsyncServer.client_blocked_users is not None and self.username in AsyncServer.client_blocked_users:
 
-                    if AsyncServer.client_blocked_users is not None and user not in AsyncServer.client_blocked_users[self.username]:
+                    if AsyncServer.client_blocked_users[self.username] is not None and user not in AsyncServer.client_blocked_users[self.username]:
                         self.current_transport = AsyncServer.transport_map[user]
                         self.send_message(data)
 
                 # ----
-                elif user in AsyncServer.client_blocked_users:
+                elif AsyncServer.client_blocked_users is not None and user in AsyncServer.client_blocked_users:
 
-                    if self.username not in AsyncServer.client_blocked_users[user]:
+                    if AsyncServer.client_blocked_users[user] is not None and self.username not in AsyncServer.client_blocked_users[user]:
                         self.current_transport = AsyncServer.transport_map[user]
                         self.send_message(data)
 
@@ -93,13 +93,13 @@ class AsyncServer(asyncio.Protocol):
             # Ensures user messages to be properly blocked
             if AsyncServer.client_blocked_users is not None and audience in AsyncServer.client_blocked_users:
 
-                if self.username not in AsyncServer.client_blocked_users[audience]:
+                if AsyncServer.client_blocked_users[audience] is not None and self.username not in AsyncServer.client_blocked_users[audience]:
                     self.current_transport = AsyncServer.transport_map[audience]
                     self.send_message(data)
             # -----
             elif AsyncServer.client_blocked_users is not None and self.username in AsyncServer.client_blocked_users:
 
-                if audience not in AsyncServer.client_blocked_users[self.username]:
+                if AsyncServer.client_blocked_users[self.username] is not None and audience not in AsyncServer.client_blocked_users[self.username]:
                     self.current_transport = AsyncServer.transport_map[audience]
                     self.send_message(data)
 
@@ -171,7 +171,7 @@ class AsyncServer(asyncio.Protocol):
 
             message_dump = AsyncServer.messages
 
-            if self.username in AsyncServer.client_blocked_users:
+            if AsyncServer.client_blocked_users is not None and self.username in AsyncServer.client_blocked_users:
                 message_dump = list(
                     filter(lambda message: message[0] not in AsyncServer.client_blocked_users[self.username],
                            message_dump))
@@ -226,7 +226,7 @@ class AsyncServer(asyncio.Protocol):
                         if user in AsyncServer.all_users_ever_logged and user != self.username:
                             server_message += (" " + user)
 
-                            if self.username in AsyncServer.client_blocked_users:
+                            if AsyncServer.client_blocked_users is not None and self.username in AsyncServer.client_blocked_users:
                                 AsyncServer.client_blocked_users[self.username].add(user)
                             else:
                                 AsyncServer.client_blocked_users[self.username] = set()
