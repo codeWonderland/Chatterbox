@@ -195,7 +195,11 @@ if __name__ == '__main__':
     # the client instance we just created
     purpose = ssl.Purpose.SERVER_AUTH
     context = ssl.create_default_context(purpose, cafile=args.cafile)
-    coro = loop.create_connection(lambda: client, host=args.host, port=args.p, ssl=context, server_hostname=args.host)
+    server_name = args.host
+    if args.cafile is not None:
+        server_name = 'localhost'
+
+    coro = loop.create_connection(lambda: client, host=args.host, port=args.p, ssl=context, server_hostname=server_name)
 
     loop.run_until_complete(coro)
 
