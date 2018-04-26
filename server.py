@@ -72,7 +72,7 @@ class AsyncServer(asyncio.Protocol):
                 # Ensures user messages to be properly blocked
                 if self.username in AsyncServer.client_blocked_users:
 
-                    if user not in AsyncServer.client_blocked_users[self.username]:
+                    if AsyncServer.client_blocked_users is not None and user not in AsyncServer.client_blocked_users[self.username]:
                         self.current_transport = AsyncServer.transport_map[user]
                         self.send_message(data)
 

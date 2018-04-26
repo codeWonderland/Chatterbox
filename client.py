@@ -12,6 +12,7 @@ import time
 import argparse
 import asyncio
 
+
 class AsyncClient(asyncio.Protocol):
     def __init__(self):
         self.__buffer = ""
@@ -165,7 +166,7 @@ def handle_user_input(loop, client):
         elif len(message) != 0 and message[0] == '/':
             recip = client.username
 
-        #Format message object to be encoded and JSONified
+        # Format message object to be encoded and JSONified
         message = {"MESSAGES": [(client.username, recip, int(time.time()), message)]}
         message = json.dumps(message)
         message = message.encode('ascii')
