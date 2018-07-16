@@ -27,6 +27,7 @@ Any updates on the server, logins, logouts, new messages, etc., will be automati
 - `/DisplayAllUsers` - display all users whom have ever been active
 
 ## Additional Specs & Information
+- The interpreter for this project is Python 3.7 through the Conda environment. As some point we will probably move to a virtual environment for pacakaging purposes, but for now it will remain under Conda.
 - All data from the server are stored to a flat file database system, pickle
 - All data sent between the client and server are encrypted using tls
 - All client interaction is handled asynchronously from the incoming data using the Asyncio library and coroutines
