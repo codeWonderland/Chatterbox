@@ -18,6 +18,8 @@ At this point the user is free to type any message and send it to the chat serve
 Any updates on the server, logins, logouts, new messages, etc., will be automatically displayed on the client's screen as they come
 
 #### Additional Client Commands
+- `/Help` - displays the full list of supported commands
+- `/Quit` - quits the application
 - `/Name` - returns client's username
 - `/Block <username>` - blocks messages to and from the specified username
 - `/UnBlock <username>` - unblocks messages from the specified username

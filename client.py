@@ -134,7 +134,7 @@ def handle_user_input(loop, client):
 
         # ---
         message = yield from loop.run_in_executor(None, input, "> Enter your username:  ")
-        if message == "quit":
+        if message == "/Quit":
             loop.stop()
             return
 
@@ -157,9 +157,6 @@ def handle_user_input(loop, client):
     while client.is_logged_in:
         recip = "ALL"
         message = yield from loop.run_in_executor(None, input, "> ")
-        if message == "quit":
-            loop.stop()
-            return
 
         # Checking for DM
         if len(message) != 0 and message[0] == '@':
@@ -169,7 +166,25 @@ def handle_user_input(loop, client):
 
         # Checking for command
         elif len(message) != 0 and message[0] == '/':
-            recip = client.username
+            if message == '/Quit':
+                loop.stop()
+                return
+            elif message == '/Help':
+                print('Chatterbox: The Chat Client You Never Knew You Didn\'t Need')
+                print('---')
+                print('Commands:')
+                print('/Block <username> - blocks messages to and from the specified username')
+                print('/Blocked - display a list of all users whom the client has blocked')
+                print('/DisplayAllUsers - display all users whom have ever been active')
+                print('/DisplayUsers - dispaly all currently active users')
+                print('/Help - display all supported commands')
+                print('/Name - display current user\'s username')
+                print('/Unblock <username> - unblocks messages from the specified username. Note that if the unblocked user has blocked the current client, messages still cannot be sent between the two clients')
+                print('/Quit - quits the application')
+                print('')
+                continue
+            else:
+                recip = client.username
 
         # Format message object to be encoded and JSONified
         message = {"MESSAGES": [(client.username, recip, int(time.time()), message)]}
