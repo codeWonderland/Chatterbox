@@ -90,7 +90,10 @@ class AsyncClient(asyncio.Protocol):
                             time_prefix = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(message[2]))
 
                             # Main display for all given output from the server
-                            print("[{}] {} : {}".format(time_prefix,message[0],message[3]))
+                            if message[0] == self.username:
+                                print("[{}] \033[36m{}\033[0m : {}".format(time_prefix,message[0],message[3]))
+                            else:
+                                print("[{}] \033[35m{}\033[0m : {}".format(time_prefix,message[0],message[3]))
 
                 elif key == "USERS_JOINED":
                     print("New User(s) Joined:")
