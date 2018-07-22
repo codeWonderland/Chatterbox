@@ -365,15 +365,17 @@ class AsyncServer(asyncio.Protocol):
     # Remove client from the transport list upon connection lost and backup
     # data to the db
     def connection_lost(self, exc):
-        AsyncServer.transport_map.pop(self.username)
-        msg = {"USERS_LEFT": [self.username]}
-        msg = json.dumps(msg).encode('ascii')
-        self.broadcast("ALL", msg)
+        # Check to make sure that the user is logged in
+        if (self.username != None && self.username != ''):
+            AsyncServer.transport_map.pop(self.username)
+            msg = {"USERS_LEFT": [self.username]}
+            msg = json.dumps(msg).encode('ascii')
+            self.broadcast("ALL", msg)
 
-        with open('server_data.pkl', 'wb') as f:
-            pickle.dump(AsyncServer.messages, f)
-            pickle.dump(AsyncServer.all_users_ever_logged, f)
-            pickle.dump(AsyncServer.client_blocked_users, f)
+            with open('server_data.pkl', 'wb') as f:
+                pickle.dump(AsyncServer.messages, f)
+                pickle.dump(AsyncServer.all_users_ever_logged, f)
+                pickle.dump(AsyncServer.client_blocked_users, f)
 
 
 if __name__ == '__main__':
