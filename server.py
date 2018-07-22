@@ -366,7 +366,7 @@ class AsyncServer(asyncio.Protocol):
     # data to the db
     def connection_lost(self, exc):
         # Check to make sure that the user is logged in
-        if (self.username != None && self.username != ''):
+        if self.username != None and self.username != '':
             AsyncServer.transport_map.pop(self.username)
             msg = {"USERS_LEFT": [self.username]}
             msg = json.dumps(msg).encode('ascii')
