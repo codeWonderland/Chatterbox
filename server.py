@@ -132,9 +132,7 @@ class AsyncServer(asyncio.Protocol):
             brace_index = data.find(b'{')
             self.data_len = struct.unpack("!I", data[0:brace_index])[0]
             data = data[brace_index:(self.data_len + brace_index)]
-
         data = data.decode('ascii')
-
         self.__buffer += data
 
         if len(self.__buffer) == self.data_len:
@@ -178,7 +176,7 @@ class AsyncServer(asyncio.Protocol):
             for user in AsyncServer.transport_map:
                 users_online.append(user)
 
-            user_accept["USER_LIST"] = users_online
+            user_accept["USER_LIST"] = self.get_users()
 
             message_dump = AsyncServer.messages
 
@@ -203,6 +201,23 @@ class AsyncServer(asyncio.Protocol):
         user_message = {"USERS_JOINED": [username]}
         user_message = json.dumps(user_message).encode('ascii')
         self.broadcast("ALL", user_message)
+
+    # Gets an array of user objects
+    def get_users(self):
+        userlist = []
+
+        for username in self.all_users_ever_logged:
+            userlist.append({
+                "name" : username,
+                "active" : False
+            })
+        
+        for username in AsyncServer.transport_map:
+            for user in userlist:
+                if user["name"] == username:
+                    user["active"] = True 
+
+        return userlist
 
     # Determines if message is a command then handles it accordingly
     def handle_messages(self, data):

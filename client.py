@@ -73,9 +73,9 @@ class AsyncClient(asyncio.Protocol):
                 # ----
                 elif key == "USER_LIST":
                     print("USERS ONLINE:")
-                    for value in data[key]:
-                        if value is not '':
-                            print(value)
+                    for user in data[key]:
+                        if user["name"] is not '' and user["active"]:
+                            print(user["name"])
                     print()
 
                 # ----
